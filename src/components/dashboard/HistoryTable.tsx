@@ -2,9 +2,12 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { Filter, ChevronRight, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { Filter, ChevronRight, ChevronLeft, ChevronRight as ChevronRightIcon, Edit3 } from "lucide-react";
 import type { AttendanceRecord } from "@/hooks/useDashboardData";
 import ExportButton from "./ExportButton";
+import EditHistoryModal from "./EditHistoryModal";
+import { useQueryClient } from "@tanstack/react-query";
+import Toast, { ToastType } from "../ui/Toast";
 
 interface HistoryTableProps {
   records: AttendanceRecord[];
@@ -27,6 +30,7 @@ const SERVICE_COLORS: Record<string, string> = {
 };
 
 export default function HistoryTable({ records, filteredRecords }: HistoryTableProps) {
+  const queryClient = useQueryClient();
   const defaults = getDefaultDateRange();
   const [dateFrom, setDateFrom] = useState(defaults.from);
   const [dateTo, setDateTo] = useState(defaults.to);
@@ -34,6 +38,17 @@ export default function HistoryTable({ records, filteredRecords }: HistoryTableP
   const [showFilter, setShowFilter] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
+
+  const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: ToastType; show: boolean }>({
+    message: "",
+    type: "success",
+    show: false,
+  });
+
+  const showToastMsg = (message: string, type: ToastType = "success") => {
+    setToast({ message, type, show: true });
+  };
 
   const filtered = useMemo(() => {
     let currentRecords = filteredRecords(dateFrom, dateTo);
@@ -63,8 +78,43 @@ export default function HistoryTable({ records, filteredRecords }: HistoryTableP
       currentPage * ITEMS_PER_PAGE
   );
 
+  const handleSaveEdit = async (counts: { adults: number; kids: number; babies: number }) => {
+    if (!editingRecord) return;
+    try {
+      const res = await fetch("/api/attendance", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recordId: editingRecord.id, // This is the Airtable record ID
+          ...counts
+        })
+      });
+
+      if (!res.ok) throw new Error("Failed to update");
+
+      showToastMsg("Record updated and versioned!");
+      queryClient.invalidateQueries({ queryKey: ["attendance-records"] });
+    } catch (e) {
+      console.error(e);
+      showToastMsg("Failed to update", "error");
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-white relative">
+      <EditHistoryModal
+        isOpen={!!editingRecord}
+        onClose={() => setEditingRecord(null)}
+        onSave={handleSaveEdit}
+        date={editingRecord?.date || ""}
+        serviceType={editingRecord?.serviceType || ""}
+        initialCounts={{
+          adults: editingRecord?.adults || 0,
+          kids: editingRecord?.kids || 0,
+          babies: editingRecord?.babies || 0,
+        }}
+      />
+      
       {/* Sticky Header */}
       <div className="sticky top-0 bg-white/95 backdrop-blur-md z-30 border-b border-gray-100/50">
         <div className="flex items-center justify-between px-5 py-5 pt-7">
@@ -147,39 +197,61 @@ export default function HistoryTable({ records, filteredRecords }: HistoryTableP
         ) : (
           <div className="divide-y divide-gray-50">
             {paginated.map((record) => (
-              <Link 
-                key={record.id} 
-                href={`/dashboard/history?date=${record.date}&type=${encodeURIComponent(record.serviceType)}`}
-                className="flex items-center justify-between px-5 py-4.5 gap-3 hover:bg-gray-50/50 active:bg-gray-100 transition-all outline-none"
-              >
-                <div className="flex flex-col min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-bold text-gray-800">{record.date}</span>
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-lg ${SERVICE_COLORS[record.serviceType]}`}>
-                      {record.serviceType === "Main Service" ? "Main" : "Kids"}
-                    </span>
+              <div key={record.id} className="group relative flex items-center justify-between px-5 py-4.5 gap-3 hover:bg-gray-50/50 transition-all outline-none">
+                <Link 
+                  href={`/dashboard/history?date=${record.date}&type=${encodeURIComponent(record.serviceType)}`}
+                  className="flex-1 min-w-0"
+                >
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-bold text-gray-800">{record.date}</span>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-lg ${SERVICE_COLORS[record.serviceType]}`}>
+                        {record.serviceType === "Main Service" ? "Main" : "Kids"}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 text-[10px] font-bold text-gray-400">
+                      <span>A: {record.adults}</span>
+                      <span>·</span>
+                      <span>K: {record.kids}</span>
+                      <span>·</span>
+                      <span>B: {record.babies}</span>
+                    </div>
                   </div>
-                  <div className="flex gap-2 text-[10px] font-bold text-gray-400">
-                    <span>A: {record.adults}</span>
-                    <span>·</span>
-                    <span>K: {record.kids}</span>
-                    <span>·</span>
-                    <span>B: {record.babies}</span>
-                  </div>
+                </Link>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setEditingRecord(record);
+                    }}
+                    className="p-2 border border-blue-100 bg-blue-50/50 text-[#0072BC] rounded-xl active:scale-90 transition-all ml-1"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                  <Link 
+                    href={`/dashboard/history?date=${record.date}&type=${encodeURIComponent(record.serviceType)}`}
+                    className="flex items-center gap-3 active:bg-gray-100 p-1.5 rounded-xl transition-all"
+                  >
+                    <div className="bg-[#0072BC]/5 text-[#0072BC] px-3 py-1 rounded-lg font-bold text-sm tracking-tight">
+                      {record.total}
+                    </div>
+                    <ChevronRightIcon className="w-4 h-4 text-gray-200" />
+                  </Link>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="bg-[#0072BC]/5 text-[#0072BC] px-3.5 py-1.5 rounded-xl font-bold text-[15px] tracking-tight">
-                    {record.total}
-                  </div>
-                  <ChevronRightIcon className="w-4 h-4 text-gray-200" />
-                </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}
         {/* Spacer for navbar */}
         <div className="h-20" />
       </div>
+
+      <Toast 
+        message={toast.message} 
+        type={toast.type} 
+        isVisible={toast.show} 
+        onClose={() => setToast(p => ({ ...p, show: false }))} 
+      />
 
       {/* Persistent Pagination Bar */}
       <div className="absolute bottom-2 left-0 right-0 px-5 z-40">

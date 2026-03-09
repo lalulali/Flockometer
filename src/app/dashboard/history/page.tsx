@@ -3,9 +3,10 @@
 import React, { Suspense, useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useDashboardData, AttendanceRecord } from "@/hooks/useDashboardData";
-import { ChevronLeft, History, Check, Loader2, ArrowRight } from "lucide-react";
+import { ChevronLeft, History, Check, Loader2, ArrowRight, Edit3 } from "lucide-react";
 import Link from "next/link";
 import Toast, { ToastType } from "@/components/ui/Toast";
+import EditHistoryModal from "@/components/dashboard/EditHistoryModal";
 
 const SERVICE_COLORS: Record<string, string> = {
     "Main Service": "bg-blue-50 text-[#0072BC]",
@@ -24,6 +25,7 @@ function HistoryDetail() {
     const type = searchParams.get("type");
 
     const [restoringId, setRestoringId] = useState<string | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const { getServiceHistory, isLoading, refetch } = useDashboardData();
     const [toast, setToast] = useState<{ message: string; type: ToastType; show: boolean }>({
         message: "",
@@ -92,6 +94,38 @@ function HistoryDetail() {
         }
     };
 
+    const handleSaveEdit = async (newCounts: { adults: number; kids: number; babies: number }) => {
+        try {
+            const raw = getServiceHistory(date!, type!);
+            const masterId = raw[0].id;
+            
+            if (!masterId) throw new Error("Could not find master record ID");
+
+            const res = await fetch("/api/attendance", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    recordId: masterId,
+                    ...newCounts
+                })
+            });
+
+            if (!res.ok) throw new Error("Failed to update values");
+
+            showToastMsg("Record updated and versioned!");
+            await refetch();
+        } catch (e) {
+            console.error(e);
+            showToastMsg("Failed to update values", "error");
+            throw e;
+        }
+    };
+
+    const activeRecord = useMemo(() => {
+        const raw = getServiceHistory(date || "", type || "");
+        return raw.length > 0 ? raw[0] : null;
+    }, [date, type, getServiceHistory]);
+
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center h-full gap-3">
@@ -118,8 +152,26 @@ function HistoryDetail() {
                         {date} • {type}
                     </p>
                 </div>
-                <div className="w-10" />
+                <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="p-2 -mr-2 rounded-xl text-[#0072BC] bg-blue-50 active:scale-95 transition-all"
+                >
+                    <Edit3 className="w-5 h-5" />
+                </button>
             </header>
+
+            <EditHistoryModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onSave={handleSaveEdit}
+                date={date || ""}
+                serviceType={type || ""}
+                initialCounts={{
+                    adults: activeRecord?.adults || 0,
+                    kids: activeRecord?.kids || 0,
+                    babies: activeRecord?.babies || 0,
+                }}
+            />
 
             <div className="p-5 space-y-4 pb-16">
                 <div className="flex items-center gap-2 mb-1">

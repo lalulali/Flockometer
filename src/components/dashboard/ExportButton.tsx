@@ -25,7 +25,7 @@ export default function ExportButton({ records }: ExportButtonProps) {
         }`}
     >
       <Download className="w-3.5 h-3.5" />
-      Export
+      Download
     </button>
   );
 }

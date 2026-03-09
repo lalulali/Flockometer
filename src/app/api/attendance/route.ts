@@ -75,10 +75,10 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
     try {
         const body = await req.json();
-        const { recordId, versionId } = body; // versionId is the submittedAt timestamp of the version to restore
+        const { recordId, versionId, adults, kids, babies } = body;
 
-        if (!recordId || !versionId) {
-            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        if (!recordId) {
+            return NextResponse.json({ error: "Missing required recordId" }, { status: 400 });
         }
 
         // Fetch all records to find the master and its history
@@ -96,35 +96,63 @@ export async function PATCH(req: Request) {
             console.error("Failed to parse history", e);
         }
 
-        // Find the index of the version we want to "Use"
-        const restoreIndex = history.findIndex((v: any) => v.submittedAt === versionId);
-        if (restoreIndex === -1) {
-            return NextResponse.json({ error: "Version not found in history" }, { status: 404 });
+        // Case 1: Restore a specific version
+        if (versionId !== undefined && versionId !== null) {
+            const restoreIndex = history.findIndex((v: any) => v.submittedAt === versionId);
+            if (restoreIndex === -1) {
+                return NextResponse.json({ error: "Version not found in history" }, { status: 404 });
+            }
+
+            const restoreData = history[restoreIndex];
+            const newHistory = [...history];
+            newHistory[restoreIndex] = {
+                adults: existing.fields.Adults ?? 0,
+                kids: existing.fields.Kids ?? 0,
+                babies: existing.fields.Babies ?? 0,
+                submittedAt: existing.fields.Date ?? new Date().toISOString()
+            };
+
+            await updateAttendanceRecord(recordId, {
+                Adults: restoreData.adults,
+                Kids: restoreData.kids,
+                Babies: restoreData.babies,
+                Date: restoreData.submittedAt,
+                History: JSON.stringify(newHistory)
+            });
+
+            return NextResponse.json({ success: true, message: "Version restored" }, { status: 200 });
         }
 
-        const restoreData = history[restoreIndex];
+        // Case 2: Direct value update (Add to history first)
+        if (adults !== undefined || kids !== undefined || babies !== undefined) {
+            const newHistory = [...history];
 
-        // SWAP: Put current main data into history at that index, and put historical data into main
-        const newHistory = [...history];
-        newHistory[restoreIndex] = {
-            adults: existing.fields.Adults ?? 0,
-            kids: existing.fields.Kids ?? 0,
-            babies: existing.fields.Babies ?? 0,
-            submittedAt: existing.fields.Date ?? new Date().toISOString()
-        };
+            // Add current state to history before overwriting
+            newHistory.push({
+                adults: existing.fields.Adults ?? 0,
+                kids: existing.fields.Kids ?? 0,
+                babies: existing.fields.Babies ?? 0,
+                submittedAt: existing.fields.Date ?? new Date().toISOString()
+            });
 
-        await updateAttendanceRecord(recordId, {
-            Adults: restoreData.adults,
-            Kids: restoreData.kids,
-            Babies: restoreData.babies,
-            Date: restoreData.submittedAt, // Keep the version's original timestamp
-            History: JSON.stringify(newHistory)
-        });
+            const historyLimit = 20;
+            const limitedHistory = newHistory.slice(-historyLimit);
 
-        return NextResponse.json({ success: true }, { status: 200 });
+            await updateAttendanceRecord(recordId, {
+                Adults: adults !== undefined ? adults : (existing.fields.Adults ?? 0),
+                Kids: kids !== undefined ? kids : (existing.fields.Kids ?? 0),
+                Babies: babies !== undefined ? babies : (existing.fields.Babies ?? 0),
+                Date: new Date().toISOString(), // Update timestamp for new edit
+                History: JSON.stringify(limitedHistory)
+            });
+
+            return NextResponse.json({ success: true, message: "Values updated" }, { status: 200 });
+        }
+
+        return NextResponse.json({ error: "Invalid update parameters" }, { status: 400 });
     } catch (error: any) {
         console.error("API PATCH /attendance error:", error);
-        return NextResponse.json({ error: error.message || "Failed to swap version" }, { status: 500 });
+        return NextResponse.json({ error: error.message || "Failed to update record" }, { status: 500 });
     }
 }
 
