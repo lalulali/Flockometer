@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import PinGate from "@/components/ui/PinGate";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -27,9 +28,11 @@ export default function RootLayout({
       <body
         className={`${inter.variable} font-sans antialiased h-full bg-[#F3F4F6] text-[#1F2937]`}
       >
-        <main className="min-h-full max-w-[375px] mx-auto bg-white shadow-xl relative overflow-x-hidden">
-          {children}
-        </main>
+        <PinGate>
+          <main className="min-h-full max-w-[375px] mx-auto bg-white shadow-xl relative overflow-x-hidden">
+            {children}
+          </main>
+        </PinGate>
       </body>
     </html>
   );
