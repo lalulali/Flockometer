@@ -6,7 +6,10 @@ Flockometer is an Attendance Counter application built specifically for IFGF. It
 - **Counter Dashboard**: Allows users to input and submit attendance counts securely (protected by PIN).
 - **History Detail**: View and restore previous versions of submitted attendance counts.
 - **Analytics Dashboard**: View trends, week-over-week comparisons, and total attendance over time.
-- **PWA Optimized**: Designed to be responsive, mobile-friendly, and capable of functioning as a Progressive Web App.
+- **PWA Optimized**: Designed to be responsive, mobile-friendly, and optimized as a Progressive Web App with:
+    - **Premium Install Prompts**: Custom "bottom-sheet" installation drawer for iOS and Android/Chrome.
+    - **Offline Resilience**: Service worker integration for basic offline availability.
+    - **Customizable Cooldown**: Smart prompt dismissal that waits 24 hours before reappearing if closed.
 
 ## Getting Started
 

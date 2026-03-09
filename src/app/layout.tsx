@@ -4,6 +4,7 @@ import "./globals.css";
 import PinGate from "@/components/ui/PinGate";
 import StickyNavbar from "@/components/ui/StickyNavbar";
 import QueryProvider from "@/components/providers/QueryProvider";
+import PWAInstallPrompt from "@/components/pwa/PWAInstallPrompt";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -20,8 +21,8 @@ export const metadata: Metadata = {
     title: "Flockometer",
   },
   icons: {
-    icon: "/icon.svg",
-    apple: "/icon.svg",
+    icon: "/icon.png",
+    apple: "/icon.png",
   }
 };
 
@@ -50,6 +51,7 @@ export default function RootLayout({
                 {children}
               </main>
               <StickyNavbar />
+              <PWAInstallPrompt />
             </div>
           </PinGate>
         </QueryProvider>
