@@ -10,7 +10,8 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  outputFileTracingRoot: "/Users/christianhadianto/Documents/TechSmith/Flockometer/.worktrees/task-1",
+  outputFileTracingRoot: "/Users/christianhadianto/Documents/TechSmith/Flockometer",
+  turbopack: {}
 };
 
 export default withPWA(nextConfig);
