@@ -1,18 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Lock } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
 
 interface PinGateProps {
   children: React.ReactNode;
 }
 
 export default function PinGate({ children }: PinGateProps) {
+  const correctPin = process.env.NEXT_PUBLIC_ACCESS_PIN || "";
+  const pinLength = correctPin.length || 6;
+  
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [pin, setPin] = useState<string>("");
+  const [pin, setPin] = useState<string[]>(new Array(pinLength).fill(""));
   const [error, setError] = useState<string | null>(null);
   const [isMounting, setIsMounting] = useState<boolean>(true);
   const [isShaking, setIsShaking] = useState<boolean>(false);
+  
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     const authed = sessionStorage.getItem("flockometer_authed");
@@ -22,11 +26,34 @@ export default function PinGate({ children }: PinGateProps) {
     setIsMounting(false);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const correctPin = process.env.NEXT_PUBLIC_ACCESS_PIN;
+  const handleChange = (value: string, index: number) => {
+    if (value.length > 1) value = value[value.length - 1];
+    
+    const newPin = [...pin];
+    newPin[index] = value;
+    setPin(newPin);
 
-    if (pin === correctPin) {
+    // Filter out potential errors when user starts typing again
+    if (error) setError(null);
+
+    // Move to next input if value is entered
+    if (value !== "" && index < pinLength - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === "Backspace" && pin[index] === "" && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    const submittedPin = pin.join("");
+    
+    if (submittedPin === correctPin) {
       sessionStorage.setItem("flockometer_authed", "true");
       setIsAuthenticated(true);
       setError(null);
@@ -34,52 +61,73 @@ export default function PinGate({ children }: PinGateProps) {
       setError("Incorrect PIN");
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 300);
-      setPin("");
+      setPin(new Array(pinLength).fill(""));
+      inputRefs.current[0]?.focus();
     }
   };
 
-  if (isMounting) return null;
+  // Auto-submit when last box is filled
+  useEffect(() => {
+    if (pin.every(digit => digit !== "") && pin.length === pinLength) {
+      handleSubmit();
+    }
+  }, [pin, pinLength]);
 
+  if (isMounting) return null;
   if (isAuthenticated) return <>{children}</>;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[#F3F4F6]">
-      <div className={`w-full max-w-sm bg-white rounded-2xl shadow-xl p-8 border border-gray-100 ${isShaking ? 'animate-shake' : ''}`}>
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-            <Lock className="w-8 h-8 text-[#0072BC]" />
+    <div className="fixed inset-0 z-[200] flex flex-col bg-[#F3F4F6] transition-all overflow-hidden">
+      <div className={`w-full max-w-md mx-auto h-full bg-white shadow-xl flex flex-col items-center justify-center p-4 ${isShaking ? 'animate-shake' : ''}`}>
+        <div className="w-full max-w-[280px] flex flex-col items-center">
+          <div className="flex flex-col items-center mb-10">
+            <img src="/logo.svg" alt="Flockometer" className="h-[28px] w-auto mb-2" />
+            <p className="text-gray-400 font-medium text-xs tracking-wide">Ifgf Attendance Counter</p>
           </div>
-          <h1 className="text-2xl font-bold text-[#1F2937]">FLOCKOMETER</h1>
-          <p className="text-gray-500 text-sm">IFGF Attendance Counter</p>
-        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 block ml-1">
-              Enter Access PIN
-            </label>
-            <input
-              type="password"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-center text-2xl tracking-[1em] focus:outline-none focus:ring-2 focus:ring-[#0072BC]/20 focus:border-[#0072BC] transition-all"
-              placeholder="••••"
-              autoFocus
-            />
-            {error && (
-              <p className="text-[#EF4444] text-sm text-center font-medium mt-2 animate-in fade-in slide-in-from-top-1">
-                {error}
+          <div className="w-full space-y-10">
+            <div className="space-y-6">
+              <p className="text-center text-sm font-semibold text-[#1F2937]/30">
+                Enter access pin
               </p>
-            )}
-          </div>
+              
+              <div className="flex justify-center w-full gap-1.5">
+                {pin.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => { inputRefs.current[index] = el; }}
+                    type="password"
+                    inputMode="text"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleChange(e.target.value, index)}
+                    onKeyDown={(e) => handleKeyDown(e, index)}
+                    className={`w-10 h-12 text-center text-3xl border-2 rounded-xl transition-all outline-none focus:ring-0 leading-[3rem]
+                      ${digit 
+                        ? "border-[#0072BC] bg-blue-50/20 text-[#0072BC]" 
+                        : "border-gray-50 bg-gray-50/50 text-gray-800 focus:border-[#0072BC]/20"
+                      }
+                    `}
+                    autoFocus={index === 0}
+                  />
+                ))}
+              </div>
 
-          <button
-            type="submit"
-            className="w-full btn-primary h-14"
-          >
-            ENTER
-          </button>
-        </form>
+              {error && (
+                <p className="text-[#EF4444] text-xs text-center font-bold mt-2 animate-shake">
+                  {error}
+                </p>
+              )}
+            </div>
+
+            <button
+              onClick={() => handleSubmit()}
+              className="w-full bg-[#0072BC] text-white h-14 rounded-2xl font-bold text-sm tracking-widest active:scale-[0.98] transition-all shadow-lg shadow-blue-100/50"
+            >
+              Verify
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

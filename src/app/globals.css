@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 :root {
   --ifgf-blue: #0072BC;
@@ -10,16 +8,24 @@
   --chart-amber: #F59E0B;
 }
 
+@theme {
+  --font-outfit: var(--font-outfit);
+}
+
 @layer base {
   body {
-    @apply selection:bg-blue-100;
-    font-family: var(--font-inter), system-ui, sans-serif;
+    @apply bg-[#F3F4F6] text-[#1F2937];
+    font-family: var(--font-outfit), system-ui, sans-serif;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-[#0072BC] text-white rounded-2xl p-4 font-semibold active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-[#0072BC] text-white rounded-2xl p-4 font-semibold active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed shadow-md;
+  }
+  
+  .card-base {
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-4;
   }
 }
 

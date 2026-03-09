@@ -22,6 +22,7 @@ export interface CounterState {
 type CounterAction =
     | { type: "INCREMENT"; category: keyof ServiceCounts }
     | { type: "DECREMENT"; category: keyof ServiceCounts }
+    | { type: "SET_COUNT"; category: keyof ServiceCounts; value: number }
     | { type: "UNDO" }
     | { type: "CLEAR_TAB" }
     | { type: "SWITCH_TAB"; tab: ServiceType }
@@ -70,6 +71,19 @@ function counterReducer(state: CounterState, action: CounterAction): CounterStat
 
             const newHistory = [currentCounts, ...currentHistory].slice(0, MAX_HISTORY);
 
+            return {
+                ...state,
+                [currentTab === "main" ? "mainService" : "kidsService"]: newCounts,
+                [currentTab === "main" ? "mainHistory" : "kidsHistory"]: newHistory,
+            };
+        }
+
+        case "SET_COUNT": {
+            const newCounts = {
+                ...currentCounts,
+                [action.category]: action.value,
+            };
+            const newHistory = [currentCounts, ...currentHistory].slice(0, MAX_HISTORY);
             return {
                 ...state,
                 [currentTab === "main" ? "mainService" : "kidsService"]: newCounts,
@@ -177,12 +191,17 @@ export function useCounterState() {
         localStorage.removeItem("flockometer_draft");
     }, []);
 
+    const handleSetCount = useCallback((category: keyof ServiceCounts, value: number) => {
+        dispatch({ type: "SET_COUNT", category, value });
+    }, []);
+
     return {
         state,
         activeCounts,
         canUndo,
         increment: handleIncrement,
         decrement: handleDecrement,
+        setCount: handleSetCount,
         undo: handleUndo,
         clearTab: handleClearTab,
         switchTab: handleSwitchTab,

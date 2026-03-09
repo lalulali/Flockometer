@@ -1,34 +1,42 @@
-# Design: Full Page Snap Dashboard & Edge-to-Edge History
+# Design Doc: Dashboard Scroll Snap & Edge-to-Edge History
 
-## Overview
-Transform the dashboard from a standard scrolling list into a high-end snapped experience with two primary views: Overview and History. The History section will be optimized for browsing large amounts of data with an edge-to-edge design and pagination.
+Implement a full-page scroll snap experience on the dashboard to improve focus on key metrics and provide a cleaner, more readable history view.
 
-## Architecture & Layout
+## 1. Objectives
+- Improve focus on Overview metrics (Hero + Chart).
+- Provide a dedicated, high-density History view.
+- Enable smooth, guided navigation between these two views using CSS Scroll Snap.
+- Implement efficient client-side pagination for historical records.
 
-### 1. Dashboard Scroller
-The main `DashboardPage` will act as a snap-scroll container.
-- **Container**: `h-[calc(100vh-3.5rem)]` (accounting for navbar height) with `snap-y snap-mandatory` and `overflow-y-auto`.
-- **Snap Sections**: 
-    - `Section 1`: `min-h-full snap-start`. Contains Hero Card and Trends Chart.
-    - `Section 2`: `min-h-full snap-start`. Contains the History Table.
+## 2. Views
 
-### 2. History Section (Edge-to-Edge)
-The `HistoryTable` component will be refactored to remove the "card" container when shown in this context.
-- **Styles**: Remove `rounded-[2rem]`, `border`, and `shadow` from the outer wrapper.
-- **List Items**: Full-width dividers between records. Consistent padding (e.g., `px-5`).
-- **Sticky Header**: The History header (Title, Total, Filter/Export buttons) will stick to the top of Section 2.
+### View 1: Overview
+- **Composition**: Hero Card + Trends Chart.
+- **Layout**: Centered or top-aligned within the viewport.
+- **Constraints**: Must fit within `h-[calc(100dvh-navbarHeight)]`.
 
-### 3. Pagination
-- **Logic**: Client-side pagination using a `currentPage` state (default 10 records/page).
-- **Controls**: A minimalist pagination bar placed at the bottom of the History section, sitting immediately above the `StickyNavbar`.
-- **Features**: Prev/Next buttons, "Page X of Y" indicator.
+### View 2: History
+- **Composition**: Redesigned `HistoryTable`.
+- **Layout**: Edge-to-edge (no container padding, no rounded card borders).
+- **Navigation**: Sticky filter header at the top.
+- **Pagination**: Floating controls just above the navbar.
 
-## Data Flow
-- Data remains driven by the `useDashboardData` hook.
-- Pagination is handled entirely in the `HistoryTable` component through local state and array slicing (`.slice(offset, offset + limit)`).
-- Filtering automatically resets pagination to Page 1.
+## 3. Technical Implementation
 
-## UI/UX Polish
-- **Animations**: Use Tailwind's transition utilities for smooth filter expansion.
-- **Snap Behavior**: Use `scroll-behavior: smooth` for a fluid feel.
-- **Persistence**: Dashboard view scroll position is reset on page load.
+### Scroll Snap
+- **Container**: The dashboard wrapper will use `snap-y snap-mandatory overflow-y-auto`.
+- **Sections**: Two `section` elements with `snap-start h-full`.
+
+### History Table Refresh
+- Remove `bg-white border rounded-[2rem]` from the main container.
+- Use a list-based edge-to-edge design.
+- Implement local state for `currentPage` and `pageSize` (e.g., 12 items).
+- Add a persistent Pagination component at the bottom of the section.
+
+### Height Calculations
+- Standardize the main container height to account for the sticky navbar and potential PWA safe areas.
+
+## 4. User Approval Items
+- [ ] Snap behavior (mandatory vs proximity).
+- [ ] Record density in edge-to-edge view.
+- [ ] Pagination control style (Minimal vs Buttons).

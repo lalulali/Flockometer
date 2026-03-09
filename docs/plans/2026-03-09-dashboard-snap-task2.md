@@ -1,3 +1,25 @@
+# History Table Edge-to-Edge & Pagination Implementation Plan
+
+> **For Antigravity:** REQUIRED WORKFLOW: Use `.agent/workflows/execute-plan.md` to execute this plan in single-flow mode.
+
+**Goal:** Redesign History table for edge-to-edge viewing with sticky headers and pagination.
+
+**Architecture:** Use local state for `currentPage` and `pageSize`. Rewrite the JSX to remove rounded card boundaries and occupy full viewport width.
+
+**Tech Stack:** Next.js (Tailwind CSS 4), Lucide Icons.
+
+---
+
+### Task 2: Edge-to-Edge History & Pagination
+
+**Files:**
+- Modify: `/Users/christianhadianto/Documents/TechSmith/Flockometer/.worktrees/task-1/src/components/dashboard/HistoryTable.tsx`
+
+**Step 1: Rewrite HistoryTable for edge-to-edge and pagination**
+
+Update state to include pagination and modify the JSX structure for the new fullscreen design.
+
+```tsx
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -71,13 +93,7 @@ export default function HistoryTable({ records, filteredRecords }: HistoryTableP
           <div>
             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0072BC] mb-0.5">Records</h3>
             <p className="text-xs font-bold text-gray-800">
-              {(() => {
-                const dates = new Set(filtered.map(r => r.date));
-                // A rough estimate of weeks based on unique dates (assuming 1-2 services per week)
-                // More accurately: count unique year-week pairs if needed, but unique dates is a good start.
-                const weekCount = Math.ceil(dates.size / 2); 
-                return `${weekCount} ${weekCount === 1 ? 'Week' : 'Weeks'} · ${filtered.length} Records`;
-              })()}
+              {filtered.length} Total Entries
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -211,3 +227,11 @@ export default function HistoryTable({ records, filteredRecords }: HistoryTableP
     </div>
   );
 }
+```
+
+**Step 2: Commit**
+
+```bash
+git add src/components/dashboard/HistoryTable.tsx
+git commit -m "feat(history): redesigned history table for edge-to-edge viewing with pagination"
+```

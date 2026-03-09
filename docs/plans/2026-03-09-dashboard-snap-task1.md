@@ -1,3 +1,25 @@
+# Dashboard Scroll Snapping Implementation Plan
+
+> **For Antigravity:** REQUIRED WORKFLOW: Use `.agent/workflows/execute-plan.md` to execute this plan in single-flow mode.
+
+**Goal:** Implement full-page vertical scroll snapping on the dashboard between Overview and History.
+
+**Architecture:** Split the dashboard into two `section` tags using `snap-start`. The second section (History) will be redesigned to fill the viewport edge-to-edge.
+
+**Tech Stack:** Next.js (Tailwind CSS 4), Lucide Icons.
+
+---
+
+### Task 1: Dashboard Scroll Snapping Layout
+
+**Files:**
+- Modify: `/Users/christianhadianto/Documents/TechSmith/Flockometer/.worktrees/task-1/src/app/dashboard/page.tsx`
+
+**Step 1: Update Dashboard layout for snapping**
+
+Apply `snap-y snap-mandatory` to the main container and wrap existing components into snap-aligned sections.
+
+```tsx
 "use client";
 
 import { Loader2, AlertCircle, RefreshCw, ChevronDown } from "lucide-react";
@@ -60,28 +82,24 @@ export default function DashboardPage() {
     <div className="h-full overflow-y-auto snap-y snap-mandatory no-scrollbar bg-gray-50/30">
       {/* SECTION 1: OVERVIEW */}
       <section className="snap-start snap-always h-full flex flex-col p-5 gap-4 shrink-0 transition-all">
-        <div className="flex flex-col gap-0.5 pt-2 shrink-0">
+        <div className="flex flex-col gap-0.5 pt-2">
           <h1 className="text-xl font-bold text-gray-800 tracking-tight">Dashboard</h1>
           <p className="text-[11px] text-gray-400 font-medium">
             Overview of your flock's growth
           </p>
         </div>
 
-        <div className="shrink-0 flex flex-col">
-          <HeroCard
-            latestTotal={latestTotal}
-            lastWeekTotal={lastWeekTotal}
-            weekOverWeekPercent={weekOverWeekPercent}
-            trendDirection={trendDirection}
-          />
-        </div>
+        <HeroCard
+          latestTotal={latestTotal}
+          lastWeekTotal={lastWeekTotal}
+          weekOverWeekPercent={weekOverWeekPercent}
+          trendDirection={trendDirection}
+        />
 
-        <div className="shrink-0 flex flex-col">
-          <TrendsChart
-            chartDataServices={chartDataServices}
-            chartDataBreakdown={chartDataBreakdown}
-          />
-        </div>
+        <TrendsChart
+          chartDataServices={chartDataServices}
+          chartDataBreakdown={chartDataBreakdown}
+        />
 
         {/* Scroll Hint */}
         <div className="flex-1 flex flex-col items-center justify-end pb-4 opacity-30">
@@ -100,3 +118,11 @@ export default function DashboardPage() {
     </div>
   );
 }
+```
+
+**Step 2: Commit**
+
+```bash
+git add src/app/dashboard/page.tsx
+git commit -m "feat(dashboard): implement full-page vertical scroll snapping"
+```
