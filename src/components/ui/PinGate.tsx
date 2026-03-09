@@ -19,9 +19,19 @@ export default function PinGate({ children }: PinGateProps) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
-    const authed = sessionStorage.getItem("flockometer_authed");
-    if (authed === "true") {
-      setIsAuthenticated(true);
+    const timeoutMinutes = parseInt(process.env.NEXT_PUBLIC_PIN_TIMEOUT_MINUTES || "1440", 10);
+    const timeoutMs = timeoutMinutes * 60 * 1000;
+    const lastActiveStr = localStorage.getItem("flockometer_authed_timestamp");
+    
+    if (lastActiveStr) {
+      const lastActive = parseInt(lastActiveStr, 10);
+      if (Date.now() - lastActive < timeoutMs) {
+        setIsAuthenticated(true);
+        // Renew the timestamp since it's being used
+        localStorage.setItem("flockometer_authed_timestamp", Date.now().toString());
+      } else {
+        localStorage.removeItem("flockometer_authed_timestamp");
+      }
     }
     setIsMounting(false);
   }, []);
@@ -54,7 +64,7 @@ export default function PinGate({ children }: PinGateProps) {
     const submittedPin = pin.join("");
     
     if (submittedPin === correctPin) {
-      sessionStorage.setItem("flockometer_authed", "true");
+      localStorage.setItem("flockometer_authed_timestamp", Date.now().toString());
       setIsAuthenticated(true);
       setError(null);
     } else {

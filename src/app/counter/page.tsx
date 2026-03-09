@@ -13,7 +13,7 @@ import Toast, { ToastType } from "@/components/ui/Toast";
 import { Undo2, RotateCcw, WifiOff } from "lucide-react";
 import { useIsOnline } from "@/hooks/useIsOnline";
 
-const SUBMIT_VARIANT = (process.env.NEXT_PUBLIC_SUBMIT_BUTTON_POSITION || "sticky-bar") as "sticky-bar" | "hero-card";
+
 
 export default function CounterPage() {
   const queryClient = useQueryClient();
