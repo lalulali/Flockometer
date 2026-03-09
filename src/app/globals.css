@@ -38,3 +38,26 @@
 .animate-shake {
   animation: shake 0.3s ease-in-out;
 }
+
+/* Global wipe for focus outlines on all chart-related elements */
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-surface,
+.recharts-surface *,
+svg,
+svg *,
+rect,
+path {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Specific fix for the blue focus border in Recharts */
+.recharts-layer:focus,
+.recharts-layer path:focus,
+.recharts-curve:focus,
+.recharts-dot:focus {
+  outline: none !important;
+}
+
+

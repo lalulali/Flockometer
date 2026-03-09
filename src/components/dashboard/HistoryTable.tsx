@@ -134,11 +134,11 @@ export default function HistoryTable({ records, filteredRecords }: HistoryTableP
             <ExportButton records={filtered} />
             <button
               onClick={() => setShowFilter((v) => !v)}
-              className={`p-2 rounded-xl transition-all ${
-                showFilter ? "bg-[#0072BC] text-white" : "bg-gray-100 text-gray-400"
+              className={`w-9 h-9 flex items-center justify-center rounded-full transition-all ${
+                showFilter ? "text-[#0072BC] bg-blue-50" : "text-gray-400 active:bg-gray-100 active:scale-90"
               }`}
             >
-              <Filter className="w-3.5 h-3.5" />
+              <Filter className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -224,9 +224,9 @@ export default function HistoryTable({ records, filteredRecords }: HistoryTableP
                       e.preventDefault();
                       setEditingRecord(record);
                     }}
-                    className="p-2 border border-blue-100 bg-blue-50/50 text-[#0072BC] rounded-xl active:scale-90 transition-all ml-1"
+                    className="w-9 h-9 flex items-center justify-center text-gray-400 rounded-full active:bg-gray-100 active:text-[#0072BC] active:scale-90 transition-all ml-1"
                   >
-                    <Edit3 className="w-3.5 h-3.5" />
+                    <Edit3 className="w-4 h-4" />
                   </button>
                   <Link 
                     href={`/dashboard/history?date=${record.date}&type=${encodeURIComponent(record.serviceType)}`}

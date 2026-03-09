@@ -101,8 +101,8 @@ export default function CounterPage() {
         <button
           onClick={undo}
           disabled={!canUndo}
-          className={`absolute left-5 top-7 p-2 rounded-xl transition-all ${
-            canUndo ? "text-gray-400 active:bg-gray-100" : "text-gray-100"
+          className={`absolute left-5 top-7 p-2 transition-all ${
+            canUndo ? "text-[#0072BC] active:scale-90" : "text-gray-100"
           }`}
           aria-label="Undo"
         >
@@ -126,7 +126,10 @@ export default function CounterPage() {
 
         <button
           onClick={() => setIsResetModalOpen(true)}
-          className="absolute right-5 top-7 p-2 rounded-xl text-gray-400 active:bg-gray-100 transition-all"
+          disabled={grandTotal === 0}
+          className={`absolute right-5 top-7 p-2 transition-all ${
+            grandTotal > 0 ? "text-red-500 active:scale-90" : "text-gray-100"
+          }`}
           aria-label="Reset"
         >
           <RotateCcw className="w-5 h-5" />

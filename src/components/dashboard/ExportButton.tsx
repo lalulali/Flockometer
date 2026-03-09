@@ -18,14 +18,14 @@ export default function ExportButton({ records }: ExportButtonProps) {
     <button
       onClick={handleExport}
       disabled={records.length === 0}
-      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all
+      className={`w-9 h-9 flex items-center justify-center rounded-full transition-all 
         ${records.length > 0
-          ? "bg-[#0072BC] text-white active:scale-95 shadow-md shadow-blue-100"
-          : "bg-gray-100 text-gray-400 cursor-not-allowed"
+          ? "text-[#0072BC] active:bg-blue-50 active:scale-90"
+          : "text-gray-200 cursor-not-allowed"
         }`}
+      title="Download Excel"
     >
-      <Download className="w-3.5 h-3.5" />
-      Download
+      <Download className="w-4 h-4" />
     </button>
   );
 }

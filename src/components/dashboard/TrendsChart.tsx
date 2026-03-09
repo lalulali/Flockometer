@@ -95,10 +95,12 @@ export default function TrendsChart({ chartDataServices, chartDataBreakdown }: T
             No data available yet
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
             <LineChart
               data={view === "services" ? chartDataServices : chartDataBreakdown}
               margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+              style={{ outline: "none", border: "none" }}
+              accessibilityLayer={false}
             >
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
               <XAxis
@@ -114,7 +116,10 @@ export default function TrendsChart({ chartDataServices, chartDataBreakdown }: T
                 tick={{ fontSize: 9, fill: "#9ca3af" }}
                 domain={[0, "auto"]}
               />
-              <Tooltip content={<CustomTooltipContent />} />
+              <Tooltip 
+                content={<CustomTooltipContent />} 
+                cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }} 
+              />
 
               {view === "services" ? (
                 <>
@@ -125,7 +130,7 @@ export default function TrendsChart({ chartDataServices, chartDataBreakdown }: T
                     stroke="#0072BC"
                     strokeWidth={2.5}
                     dot={{ fill: "#0072BC", r: 3 }}
-                    activeDot={{ r: 5 }}
+                    activeDot={{ r: 5, strokeWidth: 0 }}
                   />
                   <Line
                     type="monotone"
@@ -134,7 +139,7 @@ export default function TrendsChart({ chartDataServices, chartDataBreakdown }: T
                     stroke="#10B981"
                     strokeWidth={2.5}
                     dot={{ fill: "#10B981", r: 3 }}
-                    activeDot={{ r: 5 }}
+                    activeDot={{ r: 5, strokeWidth: 0 }}
                   />
                 </>
               ) : (
@@ -146,7 +151,7 @@ export default function TrendsChart({ chartDataServices, chartDataBreakdown }: T
                     stroke="#0072BC"
                     strokeWidth={2.5}
                     dot={{ fill: "#0072BC", r: 3 }}
-                    activeDot={{ r: 5 }}
+                    activeDot={{ r: 5, strokeWidth: 0 }}
                   />
                   <Line
                     type="monotone"
@@ -155,7 +160,7 @@ export default function TrendsChart({ chartDataServices, chartDataBreakdown }: T
                     stroke="#10B981"
                     strokeWidth={2.5}
                     dot={{ fill: "#10B981", r: 3 }}
-                    activeDot={{ r: 5 }}
+                    activeDot={{ r: 5, strokeWidth: 0 }}
                   />
                   <Line
                     type="monotone"
@@ -164,7 +169,7 @@ export default function TrendsChart({ chartDataServices, chartDataBreakdown }: T
                     stroke="#F59E0B"
                     strokeWidth={2.5}
                     dot={{ fill: "#F59E0B", r: 3 }}
-                    activeDot={{ r: 5 }}
+                    activeDot={{ r: 5, strokeWidth: 0 }}
                   />
                 </>
               )}
