@@ -15,10 +15,14 @@ export default function PinGate({ children }: PinGateProps) {
   const [error, setError] = useState<string | null>(null);
   const [isMounting, setIsMounting] = useState<boolean>(true);
   const [isShaking, setIsShaking] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(isMobileDevice);
+
     const timeoutMinutes = parseInt(process.env.NEXT_PUBLIC_PIN_TIMEOUT_MINUTES || "1440", 10);
     const timeoutMs = timeoutMinutes * 60 * 1000;
     const lastActiveStr = localStorage.getItem("flockometer_authed_timestamp");
@@ -89,7 +93,7 @@ export default function PinGate({ children }: PinGateProps) {
                   value={pinValue}
                   onChange={handleChange}
                   placeholder="••••••"
-                  autoFocus
+                  autoFocus={!isMobile}
                   className={`w-full h-16 text-center text-4xl font-mono tracking-[0.3em] border-2 rounded-2xl transition-all outline-none 
                     placeholder:text-gray-300 placeholder:tracking-[0.35em]
                     ${pinValue.length > 0 
