@@ -59,76 +59,91 @@ export default function EditHistoryModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-300"
+        className="absolute inset-0 bg-gray-900/60 backdrop-blur-[2px] animate-in fade-in duration-300"
         onClick={onClose}
       />
       
-      {/* Modal Content */}
-      <div className="relative w-full max-w-md bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-bottom duration-300 ring-1 ring-black/5">
-        {/* Handle for mobile */}
-        <div className="w-12 h-1 bg-gray-100 rounded-full mx-auto -mt-4 mb-8 sm:hidden" />
+      {/* Drawer Content */}
+      <div className="relative w-full max-w-lg bg-white rounded-t-[3rem] sm:rounded-[3rem] p-6 pb-10 sm:p-8 shadow-2xl animate-in slide-in-from-bottom duration-500 ease-out-expo ring-1 ring-black/5 flex flex-col max-h-[90vh]">
+        {/* Visual Handle */}
+        <div className="w-16 h-1.5 bg-gray-100 rounded-full mx-auto mt-0 mb-8 flex-shrink-0" />
         
-        <header className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-xl font-black text-gray-800 tracking-tight">Edit Record</h2>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
-              {date} • {serviceType}
-            </p>
-          </div>
-          <button 
-            onClick={onClose}
-            className="p-2 bg-gray-100 text-gray-400 rounded-2xl hover:bg-gray-200 transition-all active:scale-95"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </header>
-
-        <div className="space-y-6 mb-10">
-          {(['adults', 'kids', 'babies'] as const).map((key) => (
-            <div key={key} className="flex items-center justify-between bg-gray-50/50 p-4 rounded-3xl border border-gray-100/50">
-              <span className="text-sm font-bold text-gray-400 uppercase tracking-widest ml-2">{key}</span>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => updateCount(key, -1)}
-                  className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl text-gray-400 active:scale-90 active:bg-gray-50 transition-all"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  value={counts[key]}
-                  onChange={(e) => handleInputChange(key, e.target.value)}
-                  className="w-16 text-center text-xl font-black text-[#0072BC] bg-transparent outline-none focus:ring-0"
-                />
-                <button
-                  onClick={() => updateCount(key, 1)}
-                  className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl text-gray-400 active:scale-90 active:bg-gray-50 transition-all"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+        <div className="overflow-y-auto no-scrollbar">
+          <header className="flex items-center justify-between mb-8 px-2">
+            <div>
+              <h2 className="text-2xl font-black text-gray-800 tracking-tight">Edit Values</h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest leading-none">Record</span>
+                <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wide bg-blue-50 px-2 py-0.5 rounded-md">
+                  {date} • {serviceType}
+                </span>
               </div>
             </div>
-          ))}
+            <button 
+              onClick={onClose}
+              className="w-10 h-10 flex items-center justify-center bg-gray-50 text-gray-400 rounded-full active:scale-90 transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </header>
+
+          <div className="space-y-4 mb-10 px-1">
+            {(['adults', 'kids', 'babies'] as const).map((key) => (
+              <div key={key} className="flex items-center justify-between bg-gray-50/50 p-5 rounded-[2rem] border border-gray-100/50 group transition-all hover:border-blue-100">
+                <div className="flex flex-col ml-1">
+                  <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-0.5">{key}</span>
+                  <span className="text-sm font-bold text-gray-400 capitalize">{key === 'babies' ? 'Infants' : key}</span>
+                </div>
+                
+                <div className="flex items-center gap-5">
+                  <button
+                    onClick={() => updateCount(key, -1)}
+                    className="w-12 h-12 flex items-center justify-center bg-white shadow-sm border border-gray-100 rounded-2xl text-gray-400 active:scale-75 active:bg-blue-50 active:text-blue-500 transition-all"
+                  >
+                    <Minus className="w-5 h-5" />
+                  </button>
+                  
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={counts[key]}
+                    onChange={(e) => handleInputChange(key, e.target.value)}
+                    className="w-14 text-center text-2xl font-black text-[#0072BC] bg-transparent outline-none focus:ring-0"
+                  />
+                  
+                  <button
+                    onClick={() => updateCount(key, 1)}
+                    className="w-12 h-12 flex items-center justify-center bg-white shadow-sm border border-gray-100 rounded-2xl text-gray-400 active:scale-75 active:bg-blue-50 active:text-blue-500 transition-all"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="w-full h-14 bg-[#0072BC] text-white rounded-3xl font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-        >
-          {isSaving ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <>
-              <Save className="w-5 h-5" />
-              Save Changes
-            </>
-          )}
-        </button>
+        <div className="px-1 flex-shrink-0">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className={`w-full h-16 rounded-[2rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-2xl shadow-blue-200
+              ${isSaving ? 'bg-gray-100 text-blue-400' : 'bg-[#0072BC] text-white active:scale-[0.97]'}
+            `}
+          >
+            {isSaving ? (
+              <Loader2 className="w-6 h-6 animate-spin" />
+            ) : (
+              <>
+                <Save className="w-5 h-5" />
+                Save Changes
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
