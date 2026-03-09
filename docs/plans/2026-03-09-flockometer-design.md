@@ -1,38 +1,34 @@
 # Flockometer Design Document
-**Version:** 1.0.0  
-**Date:** 2026-03-09  
-**Status:** Approved  
+
+**Date:** 2026-03-09
+**Status:** Approved
+**Related:** `artifacts/product/context.md`, `artifacts/product/requirement.md`
 
 ---
 
-## 1. Project Overview
+## 1. Overview
 
-**Flockometer** is a mobile-first Progressive Web App (PWA) for IFGF church volunteers to track attendance across two service types and three age categories, then submit to Airtable. A dashboard provides at-a-glance trends and exportable historical records.
+Flockometer is a mobile-first PWA for IFGF church volunteers to count attendance across three categories (Adults, Kids, Babies) for two service types (Main Service, Kids Service), submit to Airtable, and view growth trends on a dashboard.
 
-### Tech Stack
-| Layer | Choice |
+---
+
+## 2. Tech Stack
+
+| Layer | Technology |
 |---|---|
 | Framework | Next.js 15 (App Router) |
-| Styling | Tailwind CSS (mobile-first, 375px baseline) |
-| Backend/DB | Airtable (via Personal Access Token, server-side) |
-| Charts | Recharts (AreaChart / LineChart, mobile-optimized) |
-| Export | `xlsx` library (client-side) |
-| State | React Context + Reducer (counter) + React Query (dashboard) |
-| PWA | `@ducanh2912/next-pwa` |
+| Styling | Tailwind CSS (Mobile-First) |
+| Backend/DB | Airtable Base (via Personal Access Token) |
 | Icons | Lucide React |
-
-### Brand Identity
-- **Primary:** `#0072BC` (IFGF Blue)
-- **Destructive:** `#EF4444` (Soft Red)
-- **Success/Kids:** `#10B981` (Green)
-- **Babies:** `#F59E0B` (Amber)
-- **Background:** `#F3F4F6`
-- **Radius:** `rounded-2xl` throughout
-- **Typography:** Inter (sans-serif)
+| Charts | Recharts (mobile-optimized) |
+| Export | xlsx library |
+| State | React Context (counter) + React Query (dashboard) |
+| PWA | @ducanh2912/next-pwa |
+| Persistence | localStorage (draft counts) + sessionStorage (auth) |
 
 ---
 
-## 2. Project Structure
+## 3. Architecture: Feature-Sliced Components
 
 ```
 src/
@@ -49,62 +45,64 @@ src/
 ├── components/
 │   ├── counter/
 │   │   ├── ServiceToggle.tsx   # Main/Kids segmented control
-│   │   ├── CounterDisplay.tsx  # Shows current tallies (3 cards)
-│   │   ├── CounterInputBar.tsx # + buttons (KID, BABY, ADULT)
-│   │   ├── CounterDecrBar.tsx  # — buttons (per category)
-│   │   └── CounterActions.tsx  # Undo / Reset controls
+│   │   ├── CounterDisplay.tsx  # Shows current tallies for active tab
+│   │   ├── CounterInputBar.tsx # Fixed bottom bar [+ADULT][+KIDS][+BABY]
+│   │   └── CounterActions.tsx  # Undo / Reset / Submit controls
 │   ├── dashboard/
-│   │   ├── AttendanceHero.tsx  # Hero card: total + vs last week
-│   │   ├── TrendsChart.tsx     # Line chart w/ Services/Breakdown toggle
+│   │   ├── HeroCard.tsx        # Total attendance + week-over-week
+│   │   ├── TrendsChart.tsx     # Recharts line chart (dual view)
 │   │   ├── HistoryTable.tsx    # Scrollable list + date filter
 │   │   └── ExportButton.tsx    # xlsx download trigger
 │   ├── ui/
-│   │   ├── SummaryModal.tsx    # Pre-submit: both services + grand total
+│   │   ├── SummaryModal.tsx    # Pre-submit review: both services + grand total
 │   │   ├── ConfirmationModal.tsx # Reset safety interlock
-│   │   ├── PinGate.tsx         # PIN entry screen
+│   │   ├── PinGate.tsx         # PIN entry screen (sessionStorage)
 │   │   └── FloatingNavbar.tsx  # Bottom island nav (Counter ↔ Dashboard)
 │   └── providers/
 │       └── QueryProvider.tsx   # React Query client wrapper
 ├── hooks/
-│   ├── useCounterState.ts      # Reducer + per-tab undo stacks + localStorage
-│   └── useDashboardData.ts     # React Query fetch + in-memory filter + KPI calculations
+│   ├── useCounterState.ts      # Reducer + per-tab undo stack
+│   └── useDashboardData.ts     # React Query fetch + in-memory filter
 └── lib/
-    ├── airtable.ts             # Airtable SDK wrapper (server-side only)
+    ├── airtable.ts             # Airtable SDK wrapper
     └── exportExcel.ts          # xlsx sheet generation
 ```
 
 ---
 
-## 3. Data Structure
+## 4. Data Structure
 
-### 3.1 Airtable Schema (`Attendance` table)
+### 4.1 Airtable Schema
 
 | Field | Type | Notes |
 |---|---|---|
-| `ID` | Formula | `CONCATENATE({Date}, "-", {ServiceType})` — composite PK |
-| `Date` | Date | ISO `YYYY-MM-DD`, stored in GMT |
-| `ServiceType` | Single Select | `"Main Service"` \| `"Kids Service"` |
-| `Adults` | Number | |
-| `Kids` | Number | |
-| `Babies` | Number | |
-| `Total` | Formula | `{Adults} + {Kids} + {Babies}` |
-| `SubmittedAt` | Last Modified Time | Auto-updated on every upsert |
-| `History` | Long Text | JSON array of prior submission snapshots |
+| ID | Formula | `CONCATENATE({Date}, "-", {ServiceType})` → composite PK |
+| Date | Date | ISO `YYYY-MM-DD`, stored in GMT |
+| ServiceType | Single Select | `"Main Service"` \| `"Kids Service"` |
+| Adults | Number | |
+| Kids | Number | |
+| Babies | Number | |
+| Total | Formula | `{Adults} + {Kids} + {Babies}` |
+| SubmittedAt | Last Modified Time | Auto-updated on every upsert |
+| History | Long Text | JSON array of prior snapshots |
 
-**History field format** (appended on re-submission):
+**History field format** (appended on every re-submission):
+
 ```json
 [
-  { "adults": 100, "kids": 30, "babies": 5, "submittedAt": "2026-03-09T10:00:00Z" }
+  {"adults": 100, "kids": 30, "babies": 5, "submittedAt": "2026-03-09T10:00:00Z"},
+  {"adults": 105, "kids": 32, "babies": 5, "submittedAt": "2026-03-09T11:30:00Z"}
 ]
 ```
 
 **Upsert flow in `POST /api/submit`:**
-1. Fetch existing record by `ID`
-2. If found → parse `History`, push current values as new snapshot → PATCH with new counts + updated History
-3. If not found → CREATE with `History: []`
-4. Each POST sends **two rows**: one for Main Service, one for Kids Service
 
-### 3.2 LocalStorage Draft Schema
+1. Look up existing record by ID (date + service type)
+2. If found → parse existing History, push current values as a new snapshot, then PATCH with new counts + updated History
+3. If not found → CREATE with empty `History: []`
+4. Both Main and Kids Service rows are submitted in a single POST (dual-row package)
+
+### 4.2 LocalStorage Draft Schema
 
 ```json
 // key: "flockometer_draft"
@@ -116,72 +114,59 @@ src/
 ```
 
 **Draft lifecycle:**
-- **Hydrated on mount** — `useCounterState` reads from `localStorage` on init via `HYDRATE` action
+
+- **Hydrated on mount** — `useCounterState` reads from localStorage on init
 - **Written on every tap** — debounced 300ms write after each count change
-- **Date-aware** — if stored `date` ≠ today (GMT), draft is auto-discarded and reset to zero
+- **Date-aware** — if stored `date` ≠ today (GMT), draft auto-discards and resets to zero
 - **Cleared on successful submission** — after Airtable confirms the POST
 
 ---
 
-## 4. Authentication
+## 5. Counter Page
 
-- **Mechanism:** Single PIN, case-sensitive, validated client-side
-- **ENV variable:** `ACCESS_PIN=IFGFSG`
-- **Session:** On success, `flockometer_authed=true` stored in `sessionStorage` (expires on tab close)
-- **Gate location:** Root `layout.tsx` — all routes protected
-- **Wrong PIN:** Shake animation + "Incorrect PIN" error message
-- **UI:** IFGF-branded PIN entry screen with masked text input
-
----
-
-## 5. PWA Configuration
-
-- **Package:** `@ducanh2912/next-pwa`
-- **Manifest:** `public/manifest.json`
-  - `theme_color: "#0072BC"`
-  - `background_color: "#F3F4F6"`
-  - `display: "standalone"`
-- **Service Worker caching:**
-  - Counter page + static assets → **cache-first** (works offline)
-  - `/api/submit` and `/api/records` → **network-only**
-- **Offline UX:** Toast notification: *"No connection — your counts are saved locally. Try again when online."*
-
----
-
-## 6. Counter Page
-
-### Layout (mobile-first)
+### 5.1 Layout (mobile-first, 375px)
 
 ```
 ┌─────────────────────────────┐
-│  🏛 FLOCKOMETER             │  ← header
+│  🏛 FLOCKOMETER             │
 │                             │
-│  ┌─ TOTAL ATTENDANCE ─────┐ │
-│  │         187            │ │  ← hero card (IFGF blue, active tab total)
+│  ┌── TOTAL ATTENDANCE ────┐ │
+│  │        187             │ │  ← hero card (active tab total)
 │  └────────────────────────┘ │
 │                             │
-│  [ MAIN SERVICE | KIDS SVC] │  ← ServiceToggle (segmented control)
+│  [ MAIN SERVICE | KIDS SVC] │  ← ServiceToggle
 │                             │
 │  ┌──────┐ ┌──────┐ ┌──────┐│
-│  │  84  │ │  10  │ │   2  ││  ← CounterDisplay cards
-│  │ADULTS│ │ KIDS │ │BABIES││
+│  │  42  │ │  16  │ │  84  ││  ← count cards
+│  │ KIDS │ │BABIES│ │ADULTS││
 │  └──────┘ └──────┘ └──────┘│
 │                             │
-│  [↩ UNDO]      [↺ RESET]   │  ← CounterActions
+│  [↩ UNDO]      [↺ RESET]   │
 │                             │
-│  [  —  ]  [  —  ]  [  —  ] │  ← CounterDecrBar (decrement per category)
+│  [  —  ]  [  —  ]  [  —  ] │  ← decrement buttons
 │                             │
-│  [  +  ]  [  +  ]  [  +  ] │  ← CounterInputBar (increment)
-│  [ADULT]  [ KIDS] [ BABY]  │
+│  [  +  ]  [  +  ]  [  +  ] │  ← increment buttons (large, blue)
+│  [ KID ]  [ BABY] [ADULT]  │
 │                             │
 ├─────────────────────────────┤
-│  [   ✅ SUBMIT TO AIRTABLE ]│  ← Submit (Variant A: sticky bar)
+│  [ ✅ SUBMIT ] (Variant A)  │  ← sticky bar OR hero card CTA (Variant C)
 ├─────────────────────────────┤
-│       ⬤ Counter  📊        │  ← FloatingNavbar (FAB island)
+│       ⬤ Counter  📊 Dash   │  ← FAB island navbar
 └─────────────────────────────┘
 ```
 
-### State Shape (`useCounterState`)
+### 5.2 Submit Button A/B Test (Feature Flag)
+
+```env
+NEXT_PUBLIC_SUBMIT_BUTTON_POSITION=sticky-bar   # or: hero-card
+```
+
+| Variant | Behavior |
+|---|---|
+| `sticky-bar` | Full-width blue submit bar between increment row and FAB nav |
+| `hero-card` | Submit CTA rendered inside the hero card, below the total number |
+
+### 5.3 State Shape (`useCounterState`)
 
 ```typescript
 type ServiceCounts = { adults: number; kids: number; babies: number }
@@ -189,185 +174,226 @@ type State = {
   activeTab: "main" | "kids"
   mainService: ServiceCounts
   kidsService: ServiceCounts
-  mainHistory: ServiceCounts[]   // undo stack, max 10 entries
-  kidsHistory: ServiceCounts[]   // undo stack, max 10 entries
+  mainHistory: ServiceCounts[]   // undo stack, max 10
+  kidsHistory: ServiceCounts[]   // undo stack, max 10
   date: string                   // YYYY-MM-DD (GMT)
 }
 ```
 
-**Actions:** `TAP_ADULT | TAP_KIDS | TAP_BABY | DECR_ADULT | DECR_KIDS | DECR_BABY | UNDO | RESET | SWITCH_TAB | HYDRATE`
+**Actions:** `TAP_ADULT | TAP_KIDS | TAP_BABY | DEC_ADULT | DEC_KIDS | DEC_BABY | UNDO | CLEAR | SWITCH_TAB | HYDRATE`
 
-**Undo behaviour:**
-- Scoped to the **active tab** only
-- Pushes current tab counts onto that tab's history stack before mutating
-- History stack capped at 10 entries (oldest dropped)
+- Undo is **per-tab** — each service type has its own independent 10-step history stack
+- Undo pushes the current tab's counts onto that tab's history before mutating
+- Reset triggers `ConfirmationModal` first, then resets the **active tab's** counts + its history stack
 
-**Reset behaviour:**
-- Triggers `ConfirmationModal` first
-- On confirm: zeroes **active tab** counts AND clears that tab's history stack
-- Other tab's data is unaffected
-
-### Submit Variant Feature Flag
-
-```env
-# Variant A: sticky full-width bar above the FAB navbar
-# Variant C: button embedded inside the hero card below the total
-NEXT_PUBLIC_SUBMIT_BUTTON_POSITION=sticky-bar   # or: hero-card
-```
-
-### Summary Modal
-
-Shown before submission. Displays read-only view of both tabs:
+### 5.4 Summary Modal (pre-submit)
 
 ```
-📋 Confirm Submission — Sunday, Mar 9 2026
-
-Main Service
-  Adults: 84  Kids: 10  Babies: 2  → Total: 96
-
-Kids Service
-  Adults: 5   Kids: 20  Babies: 8  → Total: 33
-
-────────────────────────
-  GRAND TOTAL: 129
-
-[ Cancel ]          [ ✅ Submit ]
+┌─────────────────────────────┐
+│  📋 Confirm Submission      │
+│  Sunday, Mar 9 2026         │
+│                             │
+│  Main Service               │
+│  Adults: 142 · Kids: 38 · Babies: 7  │
+│  Subtotal: 187              │
+│                             │
+│  Kids Service               │
+│  Adults: 5 · Kids: 62 · Babies: 12   │
+│  Subtotal: 79               │
+│                             │
+│  ═══════════════════════     │
+│  GRAND TOTAL: 266            │
+│                             │
+│  [ Cancel ]  [ ✅ Submit ]  │
+└─────────────────────────────┘
 ```
 
-### Visual Design
-- **Hero card:** `bg-[#0072BC]`, white text, `rounded-2xl`, `text-6xl font-bold` for the number
-- **ServiceToggle:** Active = IFGF blue, inactive = gray, full-width, `rounded-2xl`
-- **Count cards:** White, `rounded-2xl`, shadow — number in `text-4xl font-bold`
-- **`+` buttons:** IFGF blue, `rounded-2xl`, 72px tall, `active:scale-95` tap animation
-- **`—` buttons:** Light gray, `rounded-2xl`, smaller than `+` buttons
-- **Undo:** Ghost blue button | **Reset:** Ghost red `#EF4444`
+### 5.5 Visual Design
+
+| Element | Style |
+|---|---|
+| ServiceToggle | Active = `bg-[#0072BC]` white text, Inactive = gray, `rounded-2xl` |
+| CounterDisplay | Numbers `text-5xl font-bold`, labels muted gray |
+| Increment buttons | `bg-[#0072BC]`, white text, `text-xl`, height 72px, `active:scale-95` |
+| Decrement buttons | Ghost outline style, same grid as increment row |
+| Undo | Ghost blue button |
+| Reset | Ghost red `#EF4444` button |
 
 ---
 
-## 7. Dashboard Page
+## 6. Dashboard Page
 
-### Hero Card
-
-```
-┌──────────────────────────────────┐
-│     TOTAL ATTENDANCE             │
-│                                  │
-│   266              ↑ +8.1%      │  ← combined this week + % badge (green/red)
-│                                  │
-│        VS. 246 LAST WEEK         │  ← previous Sunday's combined total
-└──────────────────────────────────┘
-```
-
-**KPI calculations:**
-| Metric | Logic |
-|---|---|
-| **This week total** | Sum of Adults + Kids + Babies across both services for most recent Sunday |
-| **Last week total** | Same for the Sunday before |
-| **% change** | `((thisWeek - lastWeek) / lastWeek) * 100` |
-| **Badge colour** | Green for growth (`↑`), red for decline (`↓`), gray for no change |
-
-### Trends Chart
+### 6.1 Layout (mobile-first, 375px)
 
 ```
-Attendance Trends         [Services | Breakdown]
-Last 8 Sundays
+┌─────────────────────────────┐
+│  📊 DASHBOARD               │
+│                             │
+│  ┌── TOTAL ATTENDANCE ────┐ │
+│  │  266        ↑ +8.1%   │ │  ← hero card (blue gradient)
+│  │  VS. 246 LAST WEEK    │ │
+│  └───────────────────────┘ │
+│                             │
+│  ┌── Attendance Trends ───┐ │
+│  │  [Services|Breakdown]  │ │  ← toggle pill
+│  │  Last 8 Sundays        │ │
+│  │  [Line chart ↑]        │ │
+│  └───────────────────────┘ │
+│                             │
+│  ┌── HISTORY ─────────────┐ │
+│  │ [Date Range Filter]    │ │
+│  │ [📥 Export Excel]      │ │
+│  │ Mar 2 · Main  · 187    │ │
+│  │ Mar 2 · Kids  ·  79    │ │
+│  │ Feb 23 · Main · 201    │ │
+│  └───────────────────────┘ │
+│                             │
+├─────────────────────────────┤
+│       ⬤ Counter  📊 Dash   │  ← FAB island navbar
+└─────────────────────────────┘
 ```
 
-**Services view (default):**
-- 2 lines: `● Main Service` (IFGF Blue) and `● Kids Service` (Green)
-- Each line = sum of Adults + Kids + Babies for that service per Sunday
+### 6.2 Hero Card: Week-over-Week Comparison
 
-**Breakdown view:**
-- 3 lines: `● Adults` (Blue) · `● Kids` (Green) · `● Babies` (Amber `#F59E0B`)
-- Combined across both services per age category
-- Y-axis auto-scales to `max(adults) × 1.1` — ensures Babies line is distinctly visible
+- **Primary number:** this week's combined total (Main + Kids Service totals)
+- **% badge:** green `↑` for growth, red `↓` for decline, gray for no change
+- **VS. line:** previous Sunday's combined total
+- **If no previous data:** shows `"First week!"` gracefully
 
-**Shared chart config:**
-- Chart type: Recharts `<LineChart>` 
-- X-axis: Last 8 Sunday dates (abbreviated)
-- Tooltip: Shows all values on hover (including Babies) in both views
-- Smooth curves: `type="monotone"`
+### 6.3 Trends Chart (Dual View Toggle)
 
-### Data Fetching (`useDashboardData`)
+| View | Series | Colors |
+|---|---|---|
+| **Services** (default) | Main Service total, Kids Service total | Blue `#0072BC`, Green `#10B981` |
+| **Breakdown** | Adults, Kids, Babies (combined across both services) | Blue `#0072BC`, Green `#10B981`, Amber `#F59E0B` |
+
+- Chart type: `<LineChart>` (both views) — ensures trend visibility
+- Y-axis: Auto-scaled (0 → max + 10%) — Babies line stays readable
+- X-axis: Last 8 Sundays (abbreviated: "Jan 19", "Feb 2")
+- Tooltip: Shows all values on hover including Babies
+
+### 6.4 Scroll-to-Focus Behavior
+
+- Scroll down past chart → KPI + chart fade `opacity-0`, translate up → History fills screen
+- Scroll back up → KPI + chart fade back in
+- Implemented via `Intersection Observer` + CSS transitions (no Framer Motion)
+
+### 6.5 Data Fetching (`useDashboardData`)
 
 ```
 GET /api/records
-  → Paginate Airtable (100 rows/page, follow offset token until exhausted)
-  → Return all ~1k rows
+  → paginate Airtable (100 rows/page, offset token) until all ~1k rows fetched
+  → return all rows
 
-React Query:
+React Query config:
   staleTime: 5 minutes
   gcTime: 30 minutes
-
-Default filter on load: last 4 weeks (applied in-memory)
+  Default filter: last 4 weeks (applied in-memory)
 ```
 
-**Filter state (in-memory, no re-fetch):**
-- `dateFrom` / `dateTo` — date range picker
-- Applied after full dataset is cached
+### 6.6 KPI Calculations (client-side)
 
-### History Section
+| KPI | Logic |
+|---|---|
+| Latest Total | Sum of both services for most recent date |
+| Week-over-Week % | `((thisWeek - lastWeek) / lastWeek) * 100` |
+| Comparison | Show actual previous Sunday total |
 
-- Date range picker for filtering
-- `📥 Export Excel` button (IFGF Blue) at top of section
-- List rows: `Date · Service Type · Total` (tap to expand: Adults / Kids / Babies breakdown)
-- **Scroll-to-focus:** When user scrolls into History, hero + chart fade out (`opacity-0`, translate up) via `Intersection Observer` — History expands to full viewport
+### 6.7 History Table
 
-### Excel Export
+- Filterable by date range (date picker)
+- Each row: Date · Service Type · Adults · Kids · Babies · Total
+- Sorted by date descending
 
-- Filename: `IFGF_Attendance_YYYY-MM-DD.xlsx` (today's date)
-- Columns: `Date | Service Type | Adults | Kids | Babies | Total`
-- Rows: **currently filtered view only**
+### 6.8 Excel Export
 
----
-
-## 8. Navigation
-
-### Floating Island Navbar
-
-- Component: `FloatingNavbar.tsx`
-- Position: `fixed bottom-6 left-1/2 -translate-x-1/2`
-- Style: `rounded-2xl bg-white/80 backdrop-blur-md shadow-lg`
-- Tabs: Counter (home icon) ↔ Dashboard (chart icon)
-- Active: IFGF Blue icon + label | Inactive: gray
+- File name: `IFGF_Attendance_YYYY-MM-DD.xlsx` (today's date)
+- Columns: Date, Service Type, Adults, Kids, Babies, Total
+- Rows: mirrors currently filtered view only
 
 ---
 
-## 9. Environment Variables
+## 7. Authentication: PIN Gate
+
+### Flow
+
+1. User visits any page → `PinGate` component checks `sessionStorage` for `flockometer_authed`
+2. If absent → renders full-screen PIN entry
+3. User enters PIN → compared client-side against `ACCESS_PIN` env var
+4. Match → set `flockometer_authed=true` in `sessionStorage`, render app
+5. Wrong → shake animation + "Incorrect PIN" error
+6. Session expires when browser tab closes (sessionStorage behavior)
+
+### ENV Variables
+
+```env
+ACCESS_PIN=IFGFSG
+```
+
+PIN is **case-sensitive**.
+
+---
+
+## 8. Floating Island Navbar
+
+- Semi-transparent `bg-white/80 backdrop-blur-md`
+- `rounded-2xl`, subtle shadow
+- Fixed position: `bottom-6 left-1/2 -translate-x-1/2`
+- Two tabs: Counter (🏠), Dashboard (📊)
+- Active tab: IFGF Blue icon + label
+- Inactive: gray
+
+---
+
+## 9. PWA Configuration
+
+| Property | Value |
+|---|---|
+| Package | `@ducanh2912/next-pwa` |
+| Display | `standalone` |
+| Theme color | `#0072BC` |
+| Background color | `#F3F4F6` |
+| Scope | `/` |
+
+### Caching Strategy
+
+| Route | Strategy |
+|---|---|
+| Counter page + assets | Cached for offline use |
+| API routes (`/api/*`) | Network-only (require connectivity) |
+
+### Offline UX
+
+If submission is attempted offline → toast: *"No connection — your counts are saved locally. Try again when online."*
+
+---
+
+## 10. Brand Identity
+
+| Token | Value |
+|---|---|
+| Primary | `#0072BC` (IFGF Blue) |
+| Secondary | `#F3F4F6` (Light Gray) |
+| Accent/Destructive | `#EF4444` (Soft Red) |
+| Chart Green | `#10B981` |
+| Chart Amber | `#F59E0B` |
+| Typography | Inter / system-default sans-serif |
+| Border Radius | `rounded-2xl` globally |
+| Min Width | 375px (iPhone SE/Mini) |
+
+---
+
+## 11. Environment Variables
 
 ```env
 # Airtable
-AIRTABLE_PERSONAL_ACCESS_TOKEN=your_token_here
-AIRTABLE_BASE_ID=your_base_id_here
+AIRTABLE_PAT=<personal access token>
+AIRTABLE_BASE_ID=<base id>
 AIRTABLE_TABLE_NAME=Attendance
 
-# Auth
+# Authentication
 ACCESS_PIN=IFGFSG
 
 # Feature Flags
-NEXT_PUBLIC_SUBMIT_BUTTON_POSITION=sticky-bar   # or: hero-card
+NEXT_PUBLIC_SUBMIT_BUTTON_POSITION=sticky-bar  # or: hero-card
 ```
-
----
-
-## 10. Verification Checklist
-
-- [ ] Undo reverts exactly 1 step on active tab only, without affecting the other tab
-- [ ] Reset requires confirmation modal before zeroing active tab, does not affect other tab
-- [ ] LocalStorage draft restores correctly on page refresh and tab navigation
-- [ ] Draft auto-discards if stored date ≠ today (GMT)
-- [ ] Draft is cleared after successful Airtable submission
-- [ ] Re-submitting same date appends previous values to Airtable `History` field
-- [ ] Dashboard loads all ~1k rows via paginated fetch (no records skipped)
-- [ ] Chart: Services view shows Main + Kids service totals
-- [ ] Chart: Breakdown view shows Adults + Kids + Babies with Babies line visible
-- [ ] Hero card % badge is green for growth, red for decline
-- [ ] Excel export filename follows `IFGF_Attendance_YYYY-MM-DD.xlsx`
-- [ ] Excel rows match currently filtered history view
-- [ ] PIN gate blocks all routes until `ACCESS_PIN` is matched (case-sensitive)
-- [ ] Wrong PIN triggers shake animation and error message
-- [ ] Offline: counter page loads from service worker cache
-- [ ] Offline: submission attempt shows toast, does not silently fail
-- [ ] PWA installable on iOS and Android (manifest + service worker)
-- [ ] No horizontal scroll at 375px viewport width
-- [ ] Submit button variant switches correctly via `NEXT_PUBLIC_SUBMIT_BUTTON_POSITION`
