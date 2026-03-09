@@ -36,7 +36,7 @@ export default function PinGate({ children }: PinGateProps) {
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/[^0-9]/g, "").slice(0, pinLength);
+    const val = e.target.value.slice(0, pinLength);
     setPinValue(val);
     if (error) setError(null);
   };
@@ -71,7 +71,7 @@ export default function PinGate({ children }: PinGateProps) {
         <div className="w-full max-w-[280px] flex flex-col items-center">
           <div className="flex flex-col items-center mb-12">
             <img src="/logo.svg" alt="Flockometer" className="h-[32px] w-auto mb-3" />
-            <p className="text-gray-400 font-medium text-xs tracking-wide">Ifgf Attendance Counter</p>
+            <p className="text-gray-400 font-medium text-xs tracking-wide">IFGF Attendance Counter</p>
           </div>
 
           <div className="w-full space-y-8">
@@ -84,22 +84,21 @@ export default function PinGate({ children }: PinGateProps) {
                 <input
                   ref={inputRef}
                   type="password"
-                  inputMode="numeric"
                   autoComplete="one-time-code"
-                  pattern="[0-9]*"
                   maxLength={pinLength}
                   value={pinValue}
                   onChange={handleChange}
                   placeholder="••••••"
                   autoFocus
-                  className={`w-full h-16 text-center text-4xl tracking-[1em] border-2 rounded-2xl transition-all outline-none 
-                    placeholder:text-gray-100 placeholder:tracking-[0.5em]
+                  className={`w-full h-16 text-center text-4xl font-mono tracking-[0.3em] border-2 rounded-2xl transition-all outline-none 
+                    placeholder:text-gray-300 placeholder:tracking-[0.35em]
                     ${pinValue.length > 0 
                       ? "border-[#0072BC] bg-blue-50/10 text-[#0072BC]" 
                       : "border-gray-50 bg-gray-50/50 text-gray-800 focus:border-[#0072BC]/30"
                     }
                     ${error ? "border-red-100 bg-red-50/20" : ""}
                   `}
+                  style={{ paddingLeft: "0.3em" }}
                 />
               </div>
 
