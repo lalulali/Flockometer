@@ -36,7 +36,8 @@ async function upsertServiceAttendance(date: string, serviceType: string, counts
             Adults: counts.adults,
             Kids: counts.kids,
             Babies: counts.babies,
-            Date: submittedAt, // Update the timestamp to latest submission
+            // REMOVED: Date: submittedAt, 
+            // Keep original date so it doesn't "move" to today if re-submitted later
             History: JSON.stringify(newHistory)
         });
     } else {
@@ -116,7 +117,8 @@ export async function PATCH(req: Request) {
                 Adults: restoreData.adults,
                 Kids: restoreData.kids,
                 Babies: restoreData.babies,
-                Date: restoreData.submittedAt,
+                // REMOVED: Date: restoreData.submittedAt, 
+                // We keep the master date so it stays in the correct chronological slot
                 History: JSON.stringify(newHistory)
             });
 
@@ -142,7 +144,8 @@ export async function PATCH(req: Request) {
                 Adults: adults !== undefined ? adults : (existing.fields.Adults ?? 0),
                 Kids: kids !== undefined ? kids : (existing.fields.Kids ?? 0),
                 Babies: babies !== undefined ? babies : (existing.fields.Babies ?? 0),
-                Date: new Date().toISOString(), // Update timestamp for new edit
+                // REMOVED: Date: new Date().toISOString(), 
+                // Do not change the event date when editing values
                 History: JSON.stringify(limitedHistory)
             });
 

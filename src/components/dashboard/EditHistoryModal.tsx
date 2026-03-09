@@ -62,48 +62,48 @@ export default function EditHistoryModal({
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-gray-900/60 backdrop-blur-[2px] animate-in fade-in duration-300"
+        className="absolute inset-0 bg-gray-900/60 backdrop-blur-[1px] animate-in fade-in duration-300"
         onClick={onClose}
       />
       
       {/* Drawer Content */}
-      <div className="relative w-full max-w-lg bg-white rounded-t-[3rem] sm:rounded-[3rem] p-6 pb-10 sm:p-8 shadow-2xl animate-in slide-in-from-bottom duration-500 ease-out-expo ring-1 ring-black/5 flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl animate-in slide-in-from-bottom duration-400 ease-out-expo ring-1 ring-black/5 flex flex-col max-h-[80vh]">
         {/* Visual Handle */}
-        <div className="w-16 h-1.5 bg-gray-100 rounded-full mx-auto mt-0 mb-8 flex-shrink-0" />
+        <div className="w-12 h-1 bg-gray-100 rounded-full mx-auto mb-4 flex-shrink-0" />
         
         <div className="overflow-y-auto no-scrollbar">
-          <header className="flex items-center justify-between mb-8 px-2">
+          <header className="flex items-center justify-between mb-4 px-1">
             <div>
-              <h2 className="text-2xl font-black text-gray-800 tracking-tight">Edit Values</h2>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest leading-none">Record</span>
-                <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wide bg-blue-50 px-2 py-0.5 rounded-md">
+              <h2 className="text-xl font-bold text-gray-800 tracking-tight">Edit Values</h2>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest leading-none">Record</span>
+                <span className="text-[9px] font-bold text-blue-500 uppercase tracking-wide bg-blue-50 px-1.5 py-0.5 rounded-md">
                   {date} • {serviceType}
                 </span>
               </div>
             </div>
             <button 
               onClick={onClose}
-              className="w-10 h-10 flex items-center justify-center bg-gray-50 text-gray-400 rounded-full active:scale-90 transition-all"
+              className="w-8 h-8 flex items-center justify-center bg-gray-50 text-gray-400 rounded-full active:scale-90 transition-all"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </header>
 
-          <div className="space-y-4 mb-10 px-1">
+          <div className="space-y-2 mb-6 px-0.5">
             {(['adults', 'kids', 'babies'] as const).map((key) => (
-              <div key={key} className="flex items-center justify-between bg-gray-50/50 p-5 rounded-[2rem] border border-gray-100/50 group transition-all hover:border-blue-100">
-                <div className="flex flex-col ml-1">
-                  <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-0.5">{key}</span>
-                  <span className="text-sm font-bold text-gray-400 capitalize">{key === 'babies' ? 'Infants' : key}</span>
+              <div key={key} className="flex items-center justify-between bg-gray-50/50 p-3.5 rounded-2xl border border-gray-100/50 transition-all hover:border-blue-100">
+                <div className="flex flex-col ml-0.5">
+                  <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest mb-0.5">{key}</span>
+                  <span className="text-xs font-bold text-gray-500 capitalize">{key === 'babies' ? 'Infants' : key}</span>
                 </div>
                 
-                <div className="flex items-center gap-5">
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => updateCount(key, -1)}
-                    className="w-12 h-12 flex items-center justify-center bg-white shadow-sm border border-gray-100 rounded-2xl text-gray-400 active:scale-75 active:bg-blue-50 active:text-blue-500 transition-all"
+                    className="w-9 h-9 flex items-center justify-center bg-white shadow-sm border border-gray-100 rounded-xl text-gray-400 active:scale-75 active:bg-blue-50 active:text-blue-500 transition-all"
                   >
-                    <Minus className="w-5 h-5" />
+                    <Minus className="w-4 h-4" />
                   </button>
                   
                   <input
@@ -111,14 +111,14 @@ export default function EditHistoryModal({
                     inputMode="numeric"
                     value={counts[key]}
                     onChange={(e) => handleInputChange(key, e.target.value)}
-                    className="w-14 text-center text-2xl font-black text-[#0072BC] bg-transparent outline-none focus:ring-0"
+                    className="w-10 text-center text-xl font-bold text-[#0072BC] bg-transparent outline-none focus:ring-0"
                   />
                   
                   <button
                     onClick={() => updateCount(key, 1)}
-                    className="w-12 h-12 flex items-center justify-center bg-white shadow-sm border border-gray-100 rounded-2xl text-gray-400 active:scale-75 active:bg-blue-50 active:text-blue-500 transition-all"
+                    className="w-9 h-9 flex items-center justify-center bg-white shadow-sm border border-gray-100 rounded-xl text-gray-400 active:scale-75 active:bg-blue-50 active:text-blue-500 transition-all"
                   >
-                    <Plus className="w-5 h-5" />
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -126,19 +126,19 @@ export default function EditHistoryModal({
           </div>
         </div>
 
-        <div className="px-1 flex-shrink-0">
+        <div className="px-0.5 flex-shrink-0">
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className={`w-full h-16 rounded-[2rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-2xl shadow-blue-200
-              ${isSaving ? 'bg-gray-100 text-blue-400' : 'bg-[#0072BC] text-white active:scale-[0.97]'}
+            className={`w-full h-12 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-blue-100
+              ${isSaving ? 'bg-gray-100 text-blue-400' : 'bg-[#0072BC] text-white active:scale-[0.98]'}
             `}
           >
             {isSaving ? (
-              <Loader2 className="w-6 h-6 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
-                <Save className="w-5 h-5" />
+                <Save className="w-4 h-4" />
                 Save Changes
               </>
             )}
